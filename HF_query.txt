@@ -1,0 +1,27 @@
+SELECT
+s.id,
+u.email,
+a.zip,
+CASE WHEN s.expires_at = s.created_at THEN
+expired'
+WHEN s.expires_at < getdate() THEN
+expired'
+WHEN s.expires_at > getdate() THEN
+canceled'
+WHEN (s.current_period_ends_at < getdate()
+AND s.expires_at = NULL) THEN
+past due'
+WHEN expires_at IS NULL
+AND current_period_ends_at > getdate() THEN
+renewing'
+ELSE
+9999'
+END AS status
+FROM
+barkbox_copy.subscriptions as s
+LEFT JOIN barkbox_copy.users as u ON u.id = s.user_id
+LEFT JOIN barkbox_copy.addresses as a ON a.id = s.default_shipping_address_id
+WHERE
+case when a.zip ilike '%-%' then split_part(a.zip,'-',1) else a.zip end
+IN ('43206')
+AND status in ('renewing', 'canceled')
