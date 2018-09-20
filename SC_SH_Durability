@@ -1,21 +1,22 @@
-SELECT date_trunc('month',convert_timezone('UTC','US/Eastern', o.created_at)) as order_month
-, tags.name as reason_code
-, count(distinct case when o.status not ilike '%cancel%' then o.id end) as not_canceled
-, count(distinct case when o.status ilike '%cancel%' then o.id end) as canceled
-FROM barkbox_copy.tags tags
-
-
-
-
-LEFT JOIN barkbox_copy.subscription_commitments sc on sc.id = so.subscription_commitment_id
-LEFT JOIN barkbox_copy.plans p on p.id = sc.plan_id
-WHERE taggings.taggable_type = 'Order'
-
-
-
-and o.origin in ('BarkHappy - BarkBox', 'BarkHappy - BarkShop', 'BarkHappy - General')
-and p.sku ilike '%superc%'
---and tags.name IN ('durability issues', 'durability issues - super chewer')
-GROUP BY date_trunc('month',convert_timezone('UTC','US/Eastern', o.created_at))
-, tags.name
-ORDER BY 1,2;
+	
+SELECT date_trunc('month',convert_timezone('UTC','US/Eastern', o.created_at)) as order_month	
+, tags.name as reason_code	
+, count(distinct case when o.status not ilike '%cancel%' then o.id end) as not_canceled	
+, count(distinct case when o.status ilike '%cancel%' then o.id end) as canceled	
+FROM barkbox_copy.tags tags	
+	LEFT JOIN barkbox_copy.taggings on tags.id = taggings.tag_id
+	LEFT JOIN barkbox_copy.orders o ON o.id = taggings.taggable_id
+	left join barkbox_copy.orders o2 on o2.id = o.origin_order_number and o2.origin = 'Subscription'
+	left join barkbox_copy.subscription_orders so on so.order_id = o2.id
+LEFT JOIN barkbox_copy.subscription_commitments sc on sc.id = so.subscription_commitment_id	
+LEFT JOIN barkbox_copy.plans p on p.id = sc.plan_id	
+WHERE taggings.taggable_type = 'Order'	
+	and taggings.context = 'reason_codes'
+	and name ilike '%durability%'
+	and convert_timezone('UTC','US/Eastern', o.created_at) between '01/01/2018' and '09/01/2018'
+and o.origin in ('BarkHappy - BarkBox', 'BarkHappy - BarkShop', 'BarkHappy - General')	
+and p.sku ilike '%superc%'	
+--and tags.name IN ('durability issues', 'durability issues - super chewer')	
+GROUP BY date_trunc('month',convert_timezone('UTC','US/Eastern', o.created_at))	
+, tags.name	
+ORDER BY 1,2;	
