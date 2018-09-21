@@ -1,0 +1,48 @@
+
+
+select so.order_id 
+, count(case when so2.status <> 'canceled' then so2.id end) valid_orders_remaining 
+into temp orders_with_months_remaining
+from barkbox_copy.subscription_orders so
+left join barkbox_copy.subscription_orders so2 on so.subscription_commitment_id = so2.subscription_commitment_id and so2.order_number >= so.order_number 
+where so.order_id is not NULL
+group by so.order_id;
+
+
+drop table if exists order_latest_commitment;
+select *
+into temp order_latest_commitment
+from (
+select row_number () over ( partition by so.order_id order by sc.created_at desc ) rn
+, so.order_id
+, p.sku plan_sku
+, p.commitment
+, sc.commitment_start_event
+from barkbox_copy.subscription_orders so
+inner join barkbox_copy.subscription_commitments sc on sc.id = so.subscription_commitment_id
+inner join barkbox_copy.plans p on p.id = sc.plan_id
+) x
+where x.rn = 1;
+
+
+select date_trunc('month',o.scheduled_at)::date mnth
+, olc.plan_sku
+, olc.commitment plan_duration
+, case when olc.plan_sku ilike '%mobi%' then 'mobi' else 'upfrobi' end billing_plan
+, case when olc.plan_sku ilike '%superc%' then 'superchewer' else 'classic' end product_line
+, case when olc.plan_sku ilike '%extra-toy%' then true else false end extra_toy
+, case when olc.commitment_start_event ilike '%gift%' then true else false end gift
+, valid_orders_remaining
+, count(distinct case when o.scheduled_at < date_trunc('month',getdate()) and so.status = 'shipped' then o.id
+when o.scheduled_at >= date_trunc('month',getdate()) and so.status <> 'canceled' then o.id end) total_bonus_boxes
+from barkbox_copy.subscription_orders so
+inner join barkbox_copy.subscriptions s on s.id = so.subscription_id
+inner join barkbox_Copy.users u on u.id = s.user_id
+inner join barkbox_copy.orders o on o.id = so.order_id
+inner join order_latest_commitment olc on olc.order_id = o.id
+inner join orders_with_months_remaining orders_remaining on orders_remaining.order_id = o.id
+where so.is_bonus_month is true
+and u.email not ilike '%@barkbox.com'
+and date_trunc('month',o.scheduled_at) >= '08/01/2018'
+group by 1,2,3,4,5,6,7,8
+order by 1;
