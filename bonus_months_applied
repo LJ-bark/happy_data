@@ -1,0 +1,13 @@
+select date_trunc('month',convert_timezone('UTC','US/Eastern',i.created_at))::date mnth
+, count(Distinct so.order_Id) bonus_boxes_added
+from barkbox_copy.subscription_orders so
+inner join barkbox_copy.invoices i on i.id = so.invoice_id
+inner join barkbox_copy.subscription_commitments sc on sc.id = so.subscription_commitment_id
+inner join barkbox_copy.plans p on p.id = sc.plan_id
+left join barkbox_copy.entitlements e on e.subscription_order_id = so.id
+where e.id is null
+and so.is_bonus_month is true
+and p.sku ilike '%superc%'
+and convert_timezone('UTC','US/Eastern',i.created_at) between '07/01/2018' and '09/01/2018'
+group by 1
+order by 1
