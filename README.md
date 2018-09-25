@@ -10,3 +10,5 @@ Happy Reason Code Appeasements: https://docs.google.com/spreadsheets/d/1q7JTnxs1
 Bonus months financial impact: https://docs.google.com/spreadsheets/d/1iQju_Qti934KeUaY0bIHjSzQxLkHyiOdJ87Zl8Xhhx0/edit#gid=412974931
 
 Bonus months applied: current query is for SC plans in xx months
+
+Happy address info: https://docs.google.com/spreadsheets/d/1q_DIW5QMaVT4M_h9E1AEMradpqNhBypgEkj1hQGHq3g/edit?ts=5baa3f84#gid=277173081
