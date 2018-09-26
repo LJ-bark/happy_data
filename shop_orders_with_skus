@@ -1,0 +1,29 @@
+with orders_containing_skus 
+as ( select distinct li.order_id from line_items li 
+inner join items i on i.id = li.source_id and li.source_type not in ('Plan','ShippingMethod') 
+where i.sku in ( [ids] ) ) 
+, order_skus as ( select li.order_id 
+,string_agg(distinct i.sku, ', ' 
+order by i.sku) order_skus from line_items li inner join orders_containing_skus ocs on ocs.order_id = li.order_id 
+inner join items i on i.id = li.source_id 
+and li.source_type not in ('Plan','ShippingMethod') 
+group by li.order_id ) 
+select o.id order_id 
+, timezone('America/New_York'
+, o.created_at at time zone 'UTC') order_created_at_et 
+, o.origin , o.scheduled_at 
+, o.status 
+, case when o.orderable_type = 'Subscription' then o.orderable_id end subscription_id 
+, u.email 
+, case when u.email ilike 'guest+%@barkshop.com' then o.email end shop_guest_order_email 
+, u.first_name 
+, u.last_name 
+, s.id shipment_id 
+, timezone('America/New_York'
+, s.sent_to_warehouse_at at time zone 'UTC') sent_to_warehouse_at_et 
+, timezone('America/New_York', s.shipped_at at time zone 'UTC') shipped_at_et 
+, s.tracking_number 
+, s.tracking_status 
+, timezone('America/New_York'
+, s.tracking_status_updated_at at time zone 'UTC') tracking_status_updated_at_et 
+, a.full_name address_name , a.street1 , a.street2 , a.city , a.state , a.zip , a.country , osk.order_skus from orders o inner join orders_containing_skus ocs on ocs.order_id = o.id inner join order_skus osk on osk.order_id = o.id inner join users u on u.id = o.user_id inner join orders_shipments os on os.order_id = o.id and os.shipment_id is not null inner join shipments s on s.id = os.shipment_id inner join addresses a on a.id = s.address_id
