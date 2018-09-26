@@ -12,3 +12,5 @@ Bonus months financial impact: https://docs.google.com/spreadsheets/d/1iQju_Qti9
 Bonus months applied: current query is for SC plans in xx months
 
 Happy address info: https://docs.google.com/spreadsheets/d/1q_DIW5QMaVT4M_h9E1AEMradpqNhBypgEkj1hQGHq3g/edit?ts=5baa3f84#gid=277173081
+
+BarkShop orders containing 206528, 206529, 206530, 206531, 206532, 206533, 206455: https://docs.google.com/spreadsheets/d/1oO5j7_uEbpCzIyNbG4vFPgOpTRXlVS_kU5IGu2skW_g/edit#gid=1977706404
