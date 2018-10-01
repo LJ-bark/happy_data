@@ -21,3 +21,5 @@ Tailored bonus months: https://docs.google.com/spreadsheets/d/1UXf_EpOARt72UN3pj
 Happy SH orders: https://docs.google.com/spreadsheets/d/1lLcsm1ro3v_2rP_MpCzXejyyuqzapZzSbE6xlQKaXS4/edit#gid=0
 
 SH per day Q2: https://docs.google.com/spreadsheets/d/1lLcsm1ro3v_2rP_MpCzXejyyuqzapZzSbE6xlQKaXS4/edit#gid=1503505959
+
+SH Compliance: https://docs.google.com/spreadsheets/d/1lLcsm1ro3v_2rP_MpCzXejyyuqzapZzSbE6xlQKaXS4/edit#gid=1320485483
