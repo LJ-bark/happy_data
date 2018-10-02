@@ -23,3 +23,5 @@ Happy SH orders: https://docs.google.com/spreadsheets/d/1lLcsm1ro3v_2rP_MpCzXejy
 SH per day Q2: https://docs.google.com/spreadsheets/d/1lLcsm1ro3v_2rP_MpCzXejyyuqzapZzSbE6xlQKaXS4/edit#gid=1503505959
 
 SH Compliance: https://docs.google.com/spreadsheets/d/1lLcsm1ro3v_2rP_MpCzXejyyuqzapZzSbE6xlQKaXS4/edit#gid=1320485483
+
+Pup Passed Cancel Reason: https://docs.google.com/spreadsheets/d/15plnWozJ90lw8OpATP_27fRNVv5pg4S_-HY-MIGxHBM/edit?ts=5bb38bf4#gid=206465561
