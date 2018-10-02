@@ -25,3 +25,5 @@ SH per day Q2: https://docs.google.com/spreadsheets/d/1lLcsm1ro3v_2rP_MpCzXejyyu
 SH Compliance: https://docs.google.com/spreadsheets/d/1lLcsm1ro3v_2rP_MpCzXejyyuqzapZzSbE6xlQKaXS4/edit#gid=1320485483
 
 Pup Passed Cancel Reason: https://docs.google.com/spreadsheets/d/15plnWozJ90lw8OpATP_27fRNVv5pg4S_-HY-MIGxHBM/edit?ts=5bb38bf4#gid=206465561
+
+Appeasement Report Details: https://docs.google.com/spreadsheets/d/1q7JTnxs1r8W17N94tOmcTSC_NUTqQKN3HJYDaPTUQ7I/edit#gid=587549417
