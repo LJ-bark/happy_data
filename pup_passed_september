@@ -1,0 +1,35 @@
+SELECT
+s.id AS subscription_id,
+convert_timezone('UTC','US/Eastern', c.created_at) as canceled_at,
+sc.id AS subscription_commitment_id,
+p.sku,
+CASE WHEN s.expires_at = sc.created_at THEN
+expired'
+WHEN s.expires_at < getdate() THEN
+expired'
+WHEN s.expires_at > getdate() THEN
+canceled'
+WHEN (s.current_period_ends_at < getdate()
+AND s.expires_at = NULL) THEN
+past due'
+WHEN s.expires_at IS NULL
+AND current_period_ends_at > getdate() THEN
+renewing'
+ELSE
+9999'
+END AS subscription_status,
+s.heavy_chewer current_heavy_chewer_status,
+convert_timezone('UTC','US/Eastern', s.created_at) AS subscription_created_at,
+convert_timezone('UTC','US/Eastern', s.expires_at) AS subscription_expires_at
+--sc.*
+FROM barkbox_copy.subscription_cancellations c
+inner join barkbox_copy.subscriptions s on s.id = c.subscription_id
+LEFT JOIN barkbox_copy.subscription_commitments sc ON sc.subscription_id = s.id
+and c.created_at between sc.created_at
+and coalesce(sc.updated_at,sc.expires_at,sc.commitment_ends_at)
+and commitment_start_event not ilike '%gift%'
+LEFT JOIN barkbox_copy.plans p ON p.id = sc.plan_id
+WHERE
+convert_timezone('UTC','US/Eastern', c.created_at) BETWEEN '01/01/2018' AND '09/01/2018'
+and c.toy_durability is true
+and p.sku not ilike '%superc%'
