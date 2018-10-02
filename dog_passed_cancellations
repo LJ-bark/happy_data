@@ -1,0 +1,8 @@
+select date_trunc('month',convert_timezone('UTC','US/Eastern', sc.created_at))::date mnth
+
+, count(Distinct sc.created_at) canceled
+from barkbox_copy.subscription_cancellations sc 
+where sc.dog_died = TRUE
+and convert_timezone('UTC','US/Eastern', sc.created_at) between '07/01/2018' and '10/01/2018'
+group by 1
+order by 1
