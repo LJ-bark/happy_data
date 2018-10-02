@@ -1,0 +1,438 @@
+SC migration - same sub ID
+with expired_classic_subs as (
+select s.id expired_subscription_id
+, s.created_at
+, s.user_id
+, u.email
+, p.sku expired_plan_sku
+, s.expires_at
+--into temp expired_classic_subs
+from barkbox_copy.subscriptions s
+inner join barkbox_copy.plans p on p.id = s.current_plan_id
+inner join barkbox_copy.users u on u.id = s.user_id
+where s.expires_at is not null
+and s.is_gift is false
+and p.sku not ilike '%superc%'
+and s.expires_at < getdate()
+)
+, terminated_new_created_sc_subs as (
+select *
+--into temp terminated_new_created_sc_subs
+from (
+select row_number () over ( partition by sd.subscription_id order by e.expires_at desc ) rn
+, e.expired_subscription_id
+, e.created_at expired_sub_created_at
+, e.user_id
+, e.email
+, expired_plan_sku
+, e.expires_at
+, sd.subscription_id
+, sd.created_at
+, sd.initial_plan_sku
+from expired_classic_subs e
+inner join data_scratch.mh_subs_dim sd on sd.user_id = e.user_id
+and sd.created_at between e.expires_at and date_add('minute',10,e.expires_at)
+and sd.initial_is_gift is false
+and sd.initial_plan_sku ilike '%superc%'
+) x
+where x.rn = 1
+)
+, subscription_commitments_ordered as (
+select row_number () over ( partition by sc.subscription_id order by sc.id ) commitment_num
+, *
+--into temp subscription_commitments_ordered
+from barkbox_copy.subscription_commitments sc
+)
+, classic_sc_commitment_changes as (
+select sco.subscription_id
+, u.id user_id
+, u.email
+, sco.id old_commitment_id
+, sco2.id new_commitment_id
+, sco2.created_at new_commitment_created_at
+, p.sku classic_sku
+, p2.sku migrated_sc_sku
+, sco.commitment_end_event
+, sco2.commitment_start_event new_commitment_start_event
+, sco2.commitment_starts_at
+--into temp classic_sc_commitment_changes
+from subscription_commitments_ordered sco
+inner join barkbox_copy.subscriptions s on s.id = sco.subscription_id
+inner join barkbox_copy.users u on u.id = s.user_id
+inner join barkbox_copy.plans p on p.id = sco.plan_id
+left join subscription_commitments_ordered sco2 on sco2.subscription_id = sco.subscription_id
+and sco2.commitment_num = sco.commitment_num + 1
+left join barkbox_copy.plans p2 on p2.id = sco2.plan_id
+left join barkbox_copy.plans p3 on p3.id = sco.renewal_plan_id
+where p.sku not ilike '%superc%'
+and (p2.sku ilike '%superc%' or (p2.sku is null and p3.sku ilike '%superc%'))
+and sco.status = 'closed'
+)
+--historical plan changes
+select subscription_id
+, user_id
+, email
+, cast(convert_timezone('UTC','US/Eastern',new_commitment_created_at) as date) new_commitment_created_date
+, classic_sku old_classic_sku
+, migrated_sc_sku
+, case when commitment_end_event = 'current plan changed' then 'immediate'
+when commitment_end_event = 'current plan updated' then 'on next bill'
+when new_commitment_start_event = 'commitment renewed' then 'on commitment renewal'
+when new_commitment_start_event = 'reactivated' then 'on reactivation' end plan_change
+, cast(commitment_starts_at as date) sc_commitment_start_date
+from classic_sc_commitment_changes
+where convert_timezone('UTC','US/Eastern',new_commitment_created_at) >= '06/01/2018'
+
+SC migration - new sub created
+with expired_classic_subs as (
+select s.id expired_subscription_id
+, s.created_at
+, s.user_id
+, u.email
+, p.sku expired_plan_sku
+, s.expires_at
+--into temp expired_classic_subs
+from barkbox_copy.subscriptions s
+inner join barkbox_copy.plans p on p.id = s.current_plan_id
+inner join barkbox_copy.users u on u.id = s.user_id
+where s.expires_at is not null
+and s.is_gift is false
+and p.sku not ilike '%superc%'
+and s.expires_at < getdate()
+)
+, terminated_new_created_sc_subs as (
+select *
+--into temp terminated_new_created_sc_subs
+from (
+select row_number () over ( partition by sd.subscription_id order by e.expires_at desc ) rn
+, e.expired_subscription_id
+, e.created_at expired_sub_created_at
+, e.user_id
+, e.email
+, expired_plan_sku
+, e.expires_at
+, sd.subscription_id
+, sd.created_at
+, sd.initial_plan_sku
+from expired_classic_subs e
+inner join data_scratch.mh_subs_dim sd on sd.user_id = e.user_id
+and sd.created_at between e.expires_at and date_add('minute',10,e.expires_at)
+and sd.initial_is_gift is false
+and sd.initial_plan_sku ilike '%superc%'
+) x
+where x.rn = 1
+)
+, subscription_commitments_ordered as (
+select row_number () over ( partition by sc.subscription_id order by sc.id ) commitment_num
+, *
+--into temp subscription_commitments_ordered
+from barkbox_copy.subscription_commitments sc
+)
+, classic_sc_commitment_changes as (
+select sco.subscription_id
+, u.id user_id
+, u.email
+, sco.id old_commitment_id
+, sco2.id new_commitment_id
+, sco2.created_at new_commitment_created_at
+, p.sku classic_sku
+, p2.sku migrated_sc_sku
+, sco.commitment_end_event
+, sco2.commitment_start_event new_commitment_start_event
+, sco2.commitment_starts_at
+--into temp classic_sc_commitment_changes
+from subscription_commitments_ordered sco
+inner join barkbox_copy.subscriptions s on s.id = sco.subscription_id
+inner join barkbox_copy.users u on u.id = s.user_id
+inner join barkbox_copy.plans p on p.id = sco.plan_id
+left join subscription_commitments_ordered sco2 on sco2.subscription_id = sco.subscription_id
+and sco2.commitment_num = sco.commitment_num + 1
+left join barkbox_copy.plans p2 on p2.id = sco2.plan_id
+left join barkbox_copy.plans p3 on p3.id = sco.renewal_plan_id
+where p.sku not ilike '%superc%'
+and (p2.sku ilike '%superc%' or (p2.sku is null and p3.sku ilike '%superc%'))
+and sco.status = 'closed'
+)
+select t.expired_subscription_id
+, t.user_id
+, t.email
+, cast(convert_timezone('UTC','US/Eastern',t.expires_at) as date) expiration_date
+, t.subscription_id new_sub_id
+--, cast(convert_timezone('UTC','US/Eastern',t.created_at) as date) new_sub_created_date
+, t.expired_plan_sku old_classic_sku
+, t.initial_plan_sku migrated_sc_sku
+, cast(sco.commitment_starts_at as date) sc_commitment_start_date
+from terminated_new_created_sc_subs t
+inner join (
+select expired_subscription_id, count(*)
+from terminated_new_created_sc_subs
+group by expired_subscription_id
+) x on x.expired_subscription_id = t.expired_subscription_id
+inner join subscription_commitments_ordered sco on sco.subscription_id = t.subscription_id and sco.commitment_num = 1
+where x.count = 1
+and date_trunc('month',convert_timezone('UTC','US/Eastern',t.expires_at)) >= '01/01/2018'
+
+SC - new subs created
+with expired_classic_subs as (
+select s.id expired_subscription_id
+, s.created_at
+, s.user_id
+, u.email
+, p.sku expired_plan_sku
+, s.expires_at
+--into temp expired_classic_subs
+from barkbox_copy.subscriptions s
+inner join barkbox_copy.plans p on p.id = s.current_plan_id
+inner join barkbox_copy.users u on u.id = s.user_id
+where s.expires_at is not null
+and s.is_gift is false
+and p.sku not ilike '%superc%'
+and s.expires_at < getdate()
+)
+, terminated_new_created_sc_subs as (
+select *
+--into temp terminated_new_created_sc_subs
+from (
+select row_number () over ( partition by sd.subscription_id order by e.expires_at desc ) rn
+, e.expired_subscription_id
+, e.created_at expired_sub_created_at
+, e.user_id
+, e.email
+, expired_plan_sku
+, e.expires_at
+, sd.subscription_id
+, sd.created_at
+, sd.initial_plan_sku
+from expired_classic_subs e
+inner join data_scratch.mh_subs_dim sd on sd.user_id = e.user_id
+and sd.created_at between e.expires_at and date_add('minute',10,e.expires_at)
+and sd.initial_is_gift is false
+and sd.initial_plan_sku ilike '%superc%'
+) x
+where x.rn = 1
+)
+, subscription_commitments_ordered as (
+select row_number () over ( partition by sc.subscription_id order by sc.id ) commitment_num
+, *
+--into temp subscription_commitments_ordered
+from barkbox_copy.subscription_commitments sc
+)
+, classic_sc_commitment_changes as (
+select sco.subscription_id
+, u.id user_id
+, u.email
+, sco.id old_commitment_id
+, sco2.id new_commitment_id
+, sco2.created_at new_commitment_created_at
+, p.sku classic_sku
+, p2.sku migrated_sc_sku
+, sco.commitment_end_event
+, sco2.commitment_start_event new_commitment_start_event
+, sco2.commitment_starts_at
+--into temp classic_sc_commitment_changes
+from subscription_commitments_ordered sco
+inner join barkbox_copy.subscriptions s on s.id = sco.subscription_id
+inner join barkbox_copy.users u on u.id = s.user_id
+inner join barkbox_copy.plans p on p.id = sco.plan_id
+left join subscription_commitments_ordered sco2 on sco2.subscription_id = sco.subscription_id
+and sco2.commitment_num = sco.commitment_num + 1
+left join barkbox_copy.plans p2 on p2.id = sco2.plan_id
+left join barkbox_copy.plans p3 on p3.id = sco.renewal_plan_id
+where p.sku not ilike '%superc%'
+and (p2.sku ilike '%superc%' or (p2.sku is null and p3.sku ilike '%superc%'))
+and sco.status = 'closed'
+)
+select t.expired_subscription_id
+, t.user_id
+, t.email
+, cast(convert_timezone('UTC','US/Eastern',t.expires_at) as date) expiration_date
+, t.subscription_id new_sub_id
+--, cast(convert_timezone('UTC','US/Eastern',t.created_at) as date) new_sub_created_date
+, t.expired_plan_sku old_classic_sku
+, t.initial_plan_sku migrated_sc_sku
+, cast(sco.commitment_starts_at as date) sc_commitment_start_date
+from terminated_new_created_sc_subs t
+inner join (
+select expired_subscription_id, count(*)
+from terminated_new_created_sc_subs
+group by expired_subscription_id
+) x on x.expired_subscription_id = t.expired_subscription_id
+inner join subscription_commitments_ordered sco on sco.subscription_id = t.subscription_id and sco.commitment_num = 1
+where x.count > 1
+and date_trunc('month',convert_timezone('UTC','US/Eastern',t.expires_at)) >= '01/01/2018'
+order by 1
+
+free months
+select date_trunc('month',convert_timezone('UTC','US/Eastern',i.created_at))::date mnth
+, count(Distinct so.order_Id) bonus_boxes_added
+from barkbox_copy.subscription_orders so
+inner join barkbox_copy.invoices i on i.id = so.invoice_id
+inner join barkbox_copy.subscription_commitments sc on sc.id = so.subscription_commitment_id
+inner join barkbox_copy.plans p on p.id = sc.plan_id
+left join barkbox_copy.entitlements e on e.subscription_order_id = so.id
+where e.id is null
+and so.is_bonus_month is true
+and p.sku not ilike '%superc%'
+and convert_timezone('UTC','US/Eastern',i.created_at) between '06/01/2018' and '09/01/2018'
+group by 1
+order by 1
+
+FET migration
+drop table if exists ordered_commitments;
+select row_number () over ( partition by subscription_id order by created_at, id ) rn
+, *
+into temp ordered_commitments
+from barkbox_copy.subscription_commitments;
+
+
+drop table if exists free_et_plan_changes;
+select x.time_migrated_to_free_et
+, x.subscription_id
+, x.id subscription_commitment_id
+, x.commitment_starts_at
+, x.original_plan_sku
+, x.migrated_plan_sku
+, sd.current_status
+, sd.expires_at
+, case when time_migrated_to_free_et = 1 then true else false end first_migration_to_free_et
+, count(distinct case when s.shipped_at is not null and o.scheduled_at < x.commitment_starts_at then o.id end) boxes_shipped_before_migration
+, count(distinct case when s.shipped_at is not null and o.scheduled_at > x.commitment_starts_at then o.id end) boxes_shipped_after_migration
+into temp free_et_plan_changes
+from (
+select row_number () over ( partition by o.subscription_id order by o.rn ) time_migrated_to_free_et
+, o2.*
+, p.sku original_plan_sku
+, p2.sku migrated_plan_sku
+from ordered_commitments o
+inner join barkbox_copy.plans p on p.id = o.plan_id
+left join ordered_commitments o2 on o2.subscription_id = o.subscription_id and o2.rn = o.rn + 1
+left join barkbox_copy.plans p2 on p2.id = o2.plan_id
+where p.sku not ilike '%extra-toy-0%'
+and p2.sku ilike '%extra-toy-0%'
+and o2.commitment_start_event ilike '%current plan%'
+--and o.subscription_Id = 1439980
+--group by o.subscription_id
+) x
+left join barkbox_copy.orders o on o.orderable_id = x.subscription_id
+and o.orderable_type = 'Subscription'
+and o.origin = 'Subscription'
+left join barkbox_copy.orders_shipments os on os.order_Id = o.id
+left join barkbox_copy.shipments s on s.id = os.shipment_id
+left join data_scratch.mh_subs_dim sd on sd.subscription_id = x.subscription_id
+--where x.subscription_id = 1247696
+group by x.time_migrated_to_free_et
+, x.subscription_id
+, x.id
+, x.commitment_starts_at
+, x.original_plan_sku
+, x.migrated_plan_sku
+, sd.current_status
+, sd.expires_at
+, case when time_migrated_to_free_et = 1 then true else false end;
+
+
+
+
+
+--select o.subscription_id, count(*)
+--from ordered_commitments o
+--inner join barkbox_copy.plans p on p.id = o.plan_id
+--left join ordered_commitments o2 on o2.subscription_id = o.subscription_id and o2.rn = o.rn + 1
+--left join barkbox_copy.plans p2 on p2.id = o2.plan_id
+--where p.sku not ilike '%extra-toy-0%'
+--and p2.sku ilike '%extra-toy-0%'
+--and o2.commitment_start_event ilike '%current plan%'
+--group by o.subscription_id
+--having count(*) > 1
+
+
+drop table if exists free_et_new_subs;
+select oc.subscription_id
+, oc.id subscription_commitment_id
+, oc.commitment_starts_at
+, y.original_plan_sku
+, y.migrated_plan_sku
+, sd.current_status
+, sd.expires_at
+, count(distinct case when s2.shipped_at is not null then o.id end) boxes_shipped_before_migration
+, count(distinct case when s3.shipped_at is not null then o2.id end) boxes_shipped_after_migration
+into temp free_et_new_subs
+from (
+select s.id subscription_id, p.sku original_plan_sku, x.plan_sku migrated_plan_sku, min(x.id) free_extra_toy_migration_commitment
+from barkbox_copy.subscriptions s
+inner join barkbox_copy.plans p on p.id = s.current_plan_id
+inner join (
+select oc.*, s.user_id, s.created_at sub_created_at, p.sku plan_sku
+from ordered_commitments oc
+inner join barkbox_copy.subscriptions s on s.id = oc.subscription_id
+inner join barkbox_copy.plans p on p.id = oc.plan_id
+where oc.commitment_start_event ilike 'new%'
+) x on x.user_id = s.user_id and x.sub_created_at > s.expires_at
+where p.sku not ilike '%extra-toy-0%'
+and s.expires_at < getdate()
+and x.sub_created_at between s.expires_at and date_add('minute',10,s.expires_at)
+and x.plan_sku ilike '%extra-toy-0%'
+group by s.id, p.sku, x.plan_sku
+) y
+inner join ordered_commitments oc on oc.id = y.free_extra_toy_migration_commitment
+left join barkbox_copy.orders o on o.orderable_id = y.subscription_id
+and o.orderable_type = 'Subscription'
+and o.origin = 'Subscription'
+left join barkbox_copy.orders_shipments os on os.order_Id = o.id
+left join barkbox_copy.shipments s2 on s2.id = os.shipment_id
+left join barkbox_copy.orders o2 on o2.orderable_id = oc.subscription_id
+and o2.orderable_type = 'Subscription'
+and o2.origin = 'Subscription'
+left join barkbox_copy.orders_shipments os2 on os2.order_Id = o2.id
+left join barkbox_copy.shipments s3 on s3.id = os2.shipment_id
+left join data_scratch.mh_subs_dim sd on sd.subscription_id = oc.subscription_id
+group by oc.subscription_id
+, oc.id
+, oc.commitment_starts_at
+, y.original_plan_sku
+, y.migrated_plan_sku
+, sd.current_status
+, sd.expires_at;
+
+
+select date_trunc('month',commitment_starts_at), count(*)--, count(distinct subscription_Id)
+from free_et_plan_changes
+--where time_migrated_to_free_et = 1
+where date_trunc('month',commitment_starts_at) >= '06/01/2017'
+group by date_trunc('month',commitment_starts_at)
+order by 1;
+
+
+
+select date_trunc('month',commitment_starts_at), count(*)--, count(distinct subscription_Id)
+from free_et_new_subs
+--where time_migrated_to_free_et = 1
+where date_trunc('month',commitment_starts_at) >= '06/01/2017'
+group by date_trunc('month',commitment_starts_at)
+order by 1;
+
+
+
+select subscription_id
+, subscription_commitment_id
+, date_trunc('month',commitment_starts_at) commitment_start_month
+, original_plan_sku
+, migrated_plan_sku new_plan_sku
+, boxes_shipped_before_migration
+, boxes_shipped_after_migration
+, current_status
+, expires_at
+, first_migration_to_free_et
+from free_et_plan_changes
+union all
+select subscription_id
+, subscription_commitment_id
+, date_trunc('month',commitment_starts_at) commitment_start_month
+, original_plan_sku
+, migrated_plan_sku
+, boxes_shipped_before_migration
+, boxes_shipped_after_migration
+, current_status
+, expires_at
+, FALSE
+from free_et_new_subs;
