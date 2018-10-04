@@ -1,0 +1,5 @@
+select i.id invoice_id, s.id sub_id, i.amount_in_cents, i.created_at
+from barkbox_copy.invoices i
+left join barkbox_copy.subscriptions s on s.user_id = i.user_id
+where s.id in ([sub ids])
+and i.created_at > '09/30/2018'
