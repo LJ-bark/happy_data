@@ -1,0 +1,11 @@
+SELECT s.id, i.sku
+from barkbox_copy.users u 
+JOIN barkbox_copy.subscriptions s ON u.id = s.user_id
+JOIN barkbox_copy.subscription_orders so on s.id = so.subscription_id
+JOIN barkbox_copy.line_items li on li.order_id = so.order_id
+JOIN barkbox_copy.items i ON i.id = li.source_id
+where s.id in ([SUB_IDS])
+AND so.status = 'shipped'
+AND li.source_type = 'Box'
+and i.sku in ('602153C','602141XC','602141C','602140XN','602139XC','602138XN','602137XC','602122XN','602121XC','602134XN','602134N','602133XC','602133C','602120XN','602119XC','602120N','602119C','602153C','602138XN','602138N','602137XC','602137C','602122XN','602121XC','602122N','602121C','602132XN','602132N','602131XC','602131C','602120XN','602119XC','602120N','602119C','601535TN','601534TC','601530C','601530XC','601531N','601531XN','601534C','601534XC','601534XTC','601535N','601535XN','601535XTN','601480N','601485XN','205655') or null
+ORDER BY so.scheduled_at DESC
