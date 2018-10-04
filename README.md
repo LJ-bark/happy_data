@@ -29,3 +29,5 @@ Pup Passed Cancel Reason: https://docs.google.com/spreadsheets/d/15plnWozJ90lw8O
 Appeasement Report Details: https://docs.google.com/spreadsheets/d/1q7JTnxs1r8W17N94tOmcTSC_NUTqQKN3HJYDaPTUQ7I/edit#gid=587549417
 
 Invoice ID Verizon Up: https://docs.google.com/spreadsheets/d/19Z97YFx2SFy1aAfHDJJZrmOZxVotaikKjvH7RPTHYe0/edit#gid=1781379801
+
+Tailored SKU Swap: https://docs.google.com/spreadsheets/d/1c-cFc4yZOtbmyWhOUY-6cOuhDFdG4XLuRc90Pn-ZDi0/edit#gid=0
