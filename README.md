@@ -31,3 +31,5 @@ Appeasement Report Details: https://docs.google.com/spreadsheets/d/1q7JTnxs1r8W1
 Invoice ID Verizon Up: https://docs.google.com/spreadsheets/d/19Z97YFx2SFy1aAfHDJJZrmOZxVotaikKjvH7RPTHYe0/edit#gid=1781379801
 
 Tailored SKU Swap: https://docs.google.com/spreadsheets/d/1c-cFc4yZOtbmyWhOUY-6cOuhDFdG4XLuRc90Pn-ZDi0/edit#gid=0
+
+Coupon Redemptions: https://docs.google.com/spreadsheets/d/1jxoUC96xn71IJxiEfDJ97Nxz9Q6zjO7LNUO_d8m4CTk/edit?ts=5bb6737c#gid=1732659123
