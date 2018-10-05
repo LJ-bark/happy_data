@@ -1,0 +1,5 @@
+select u.email, s.id, sf.coupon_codes
+from barkbox_copy.subscriptions s
+join barkbox_copy.users u on u.id = s.user_id
+join barkbox_copy.subscription_facts sf on sf.subscription_id = s.id
+where s.id in (SUB ID)
