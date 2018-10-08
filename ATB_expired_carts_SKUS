@@ -1,0 +1,13 @@
+SELECT i.sku
+, o.id order_id
+, s.id sub_id
+, o.scheduled_at
+FROM barkbox_copy.orders o 
+LEFT JOIN barkbox_copy.subscription_orders so on so.order_id = o.id
+LEFT JOIN barkbox_copy.subscriptions s ON s.id = so.subscription_id
+JOIN barkbox_copy.line_items li on li.order_id = so.order_id
+JOIN barkbox_copy.items i ON i.id = li.source_id
+WHERE i.sku in ('206635', '206310', '205908', '206770')
+AND li.origin = 'Add On Order' 
+AND o.scheduled_at > '09/30/2018'
+GROUP BY 1,2,3,4
