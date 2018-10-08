@@ -1,0 +1,6 @@
+select sf.status, sf.plan_sku, s.*
+from barkbox_copy.subscriptions s
+left join barkbox_copy.subscription_orders so on so.subscription_id = s.id
+left join barkbox_copy.subscription_facts sf on sf.subscription_id = s.id
+left join barkbox_copy.orders o on o.id = so.order_id
+where o.id in ([sub_ids])
