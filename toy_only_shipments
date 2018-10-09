@@ -1,0 +1,16 @@
+select date_trunc('month',o.scheduled_at)::date scheduled_month
+, count(distinct o.id) orders_shipped
+, sb.toy_only toy_only
+from barkbox_copy.orders o
+inner join barkbox_copy.line_items li on li.order_id = o.id
+inner join barkbox_copy.items i on i.id = li.source_id
+inner join barkbox_copy.orders_shipments os on os.order_id = o.id
+inner join barkbox_copy.shipments s on s.id = os.shipment_id
+left join barkbox_copy.subscriptions sb on sb.user_id = o.user_id
+where li.source_type = 'Box'
+and sb.toy_only = 'TRUE'
+and s.shipped_at is not null
+and s.cancelled_at is null
+and s.rejected_at is null
+and date_trunc('day', o.scheduled_at)::date between '07/01/2018' and '10/01/2018'
+group by 1,3
