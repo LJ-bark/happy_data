@@ -1,0 +1,12 @@
+select a.state
+
+, count(*)
+
+from barkbox_copy.addresses a  
+
+left join barkbox_copy.subscriptions s on s.user_id = a.user_id
+
+where a.state = 'PR'
+
+and s.expires_at is null or s.expires_at > getdate()
+group by a.state
