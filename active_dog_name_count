@@ -1,0 +1,9 @@
+
+select s.dog_name 
+, count(*)
+from barkbox_copy.subscriptions s  
+left join barkbox_copy.subscription_facts sf on sf.subscription_id = s.id
+left join barkbox_copy.users u on u.id = s.user_id
+where s.dog_name is not null
+and s.expires_at is null or s.expires_at > getdate()
+group by s.dog_name
