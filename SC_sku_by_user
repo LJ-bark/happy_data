@@ -1,0 +1,11 @@
+SELECT s.id, i.sku, u.email
+from barkbox_copy.users u
+JOIN barkbox_copy.subscriptions s ON u.id = s.user_id
+JOIN barkbox_copy.subscription_orders so on s.id = so.subscription_id
+JOIN barkbox_copy.line_items li on li.order_id = so.order_id
+JOIN barkbox_copy.items i ON i.id = li.source_id
+where u.email in
+AND so.status = 'shipped'
+AND li.source_type = 'Box'
+AND i.sku ilike '%S%'
+ORDER BY so.scheduled_at DESC
