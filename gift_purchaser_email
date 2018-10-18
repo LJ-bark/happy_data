@@ -1,0 +1,12 @@
+select convert_timezone('UTC','US/Eastern',o.created_at) order_created_at_et
+, gu.email gift_purchaser_email
+, gu.id gift_purchaser_id
+from barkbox_copy.shipments sh
+JOIN barkbox_copy.orders_shipments os on os.shipment_id = sh.id
+JOIN barkbox_copy.orders o on os.order_id = o.id
+JOIN barkbox_copy.users u on u.id = o.user_id
+JOIN barkbox_copy.subscriptions sub on sub.id = o.origin_order_number
+join barkbox_copy.gift_codes gc on gc.redeemable_id = sub.id and sub.is_gift is true
+join barkbox_copy.users gu on gc.purchaser_user_id = gu.id
+where 
+sh.id in 
