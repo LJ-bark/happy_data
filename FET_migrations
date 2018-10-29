@@ -1,0 +1,158 @@
+drop table if exists ordered_commitments;
+select row_number () over ( partition by subscription_id order by created_at, id ) rn
+, *
+into temp ordered_commitments
+from barkbox_copy.subscription_commitments;
+
+
+drop table if exists free_et_plan_changes;
+select x.time_migrated_to_free_et
+, x.subscription_id
+, x.id subscription_commitment_id
+, x.commitment_starts_at
+, x.original_plan_sku
+, x.migrated_plan_sku
+, sd.current_status
+, sd.expires_at
+, case when time_migrated_to_free_et = 1 then true else false end first_migration_to_free_et
+, count(distinct case when s.shipped_at is not null and o.scheduled_at < x.commitment_starts_at then o.id end) boxes_shipped_before_migration
+, count(distinct case when s.shipped_at is not null and o.scheduled_at > x.commitment_starts_at then o.id end) boxes_shipped_after_migration
+into temp free_et_plan_changes
+from (
+select row_number () over ( partition by o.subscription_id order by o.rn ) time_migrated_to_free_et
+, o2.*
+, p.sku original_plan_sku
+, p2.sku migrated_plan_sku
+from ordered_commitments o
+inner join barkbox_copy.plans p on p.id = o.plan_id
+left join ordered_commitments o2 on o2.subscription_id = o.subscription_id and o2.rn = o.rn + 1
+left join barkbox_copy.plans p2 on p2.id = o2.plan_id
+where p.sku not ilike '%extra-toy-0%'
+and p2.sku ilike '%extra-toy-0%'
+and o2.commitment_start_event ilike '%current plan%'
+--and o.subscription_Id = 1439980
+--group by o.subscription_id
+) x
+left join barkbox_copy.orders o on o.orderable_id = x.subscription_id
+and o.orderable_type = 'Subscription'
+and o.origin = 'Subscription'
+left join barkbox_copy.orders_shipments os on os.order_Id = o.id
+left join barkbox_copy.shipments s on s.id = os.shipment_id
+left join data_scratch.mh_subs_dim sd on sd.subscription_id = x.subscription_id
+--where x.subscription_id = 1247696
+group by x.time_migrated_to_free_et
+, x.subscription_id
+, x.id
+, x.commitment_starts_at
+, x.original_plan_sku
+, x.migrated_plan_sku
+, sd.current_status
+, sd.expires_at
+, case when time_migrated_to_free_et = 1 then true else false end;
+
+
+
+
+
+--select o.subscription_id, count(*)
+--from ordered_commitments o
+--inner join barkbox_copy.plans p on p.id = o.plan_id
+--left join ordered_commitments o2 on o2.subscription_id = o.subscription_id and o2.rn = o.rn + 1
+--left join barkbox_copy.plans p2 on p2.id = o2.plan_id
+--where p.sku not ilike '%extra-toy-0%'
+--and p2.sku ilike '%extra-toy-0%'
+--and o2.commitment_start_event ilike '%current plan%'
+--group by o.subscription_id
+--having count(*) > 1
+
+
+drop table if exists free_et_new_subs;
+select oc.subscription_id
+, oc.id subscription_commitment_id
+, oc.commitment_starts_at
+, y.original_plan_sku
+, y.migrated_plan_sku
+, sd.current_status
+, sd.expires_at
+, count(distinct case when s2.shipped_at is not null then o.id end) boxes_shipped_before_migration
+, count(distinct case when s3.shipped_at is not null then o2.id end) boxes_shipped_after_migration
+into temp free_et_new_subs
+from (
+select s.id subscription_id, p.sku original_plan_sku, x.plan_sku migrated_plan_sku, min(x.id) free_extra_toy_migration_commitment
+from barkbox_copy.subscriptions s
+inner join barkbox_copy.plans p on p.id = s.current_plan_id
+inner join (
+select oc.*, s.user_id, s.created_at sub_created_at, p.sku plan_sku
+from ordered_commitments oc
+inner join barkbox_copy.subscriptions s on s.id = oc.subscription_id
+inner join barkbox_copy.plans p on p.id = oc.plan_id
+where oc.commitment_start_event ilike 'new%'
+) x on x.user_id = s.user_id and x.sub_created_at > s.expires_at
+where p.sku not ilike '%extra-toy-0%'
+and s.expires_at < getdate()
+and x.sub_created_at between s.expires_at and date_add('minute',10,s.expires_at)
+and x.plan_sku ilike '%extra-toy-0%'
+group by s.id, p.sku, x.plan_sku
+) y
+inner join ordered_commitments oc on oc.id = y.free_extra_toy_migration_commitment
+left join barkbox_copy.orders o on o.orderable_id = y.subscription_id
+and o.orderable_type = 'Subscription'
+and o.origin = 'Subscription'
+left join barkbox_copy.orders_shipments os on os.order_Id = o.id
+left join barkbox_copy.shipments s2 on s2.id = os.shipment_id
+left join barkbox_copy.orders o2 on o2.orderable_id = oc.subscription_id
+and o2.orderable_type = 'Subscription'
+and o2.origin = 'Subscription'
+left join barkbox_copy.orders_shipments os2 on os2.order_Id = o2.id
+left join barkbox_copy.shipments s3 on s3.id = os2.shipment_id
+left join data_scratch.mh_subs_dim sd on sd.subscription_id = oc.subscription_id
+group by oc.subscription_id
+, oc.id
+, oc.commitment_starts_at
+, y.original_plan_sku
+, y.migrated_plan_sku
+, sd.current_status
+, sd.expires_at;
+
+
+select date_trunc('month',commitment_starts_at), count(*)--, count(distinct subscription_Id)
+from free_et_plan_changes
+--where time_migrated_to_free_et = 1
+where date_trunc('month',commitment_starts_at) >= '06/01/2017'
+group by date_trunc('month',commitment_starts_at)
+order by 1;
+
+
+
+select date_trunc('month',commitment_starts_at), count(*)--, count(distinct subscription_Id)
+from free_et_new_subs
+--where time_migrated_to_free_et = 1
+where date_trunc('month',commitment_starts_at) >= '06/01/2017'
+group by date_trunc('month',commitment_starts_at)
+order by 1;
+
+
+
+select subscription_id
+, subscription_commitment_id
+, date_trunc('month',commitment_starts_at) commitment_start_month
+, original_plan_sku
+, migrated_plan_sku new_plan_sku
+, boxes_shipped_before_migration
+, boxes_shipped_after_migration
+, current_status
+, expires_at
+, first_migration_to_free_et
+from free_et_plan_changes
+union all
+select subscription_id
+, subscription_commitment_id
+, date_trunc('month',commitment_starts_at) commitment_start_month
+, original_plan_sku
+, migrated_plan_sku
+, boxes_shipped_before_migration
+, boxes_shipped_after_migration
+, current_status
+, expires_at
+, FALSE
+from free_et_new_subs;
