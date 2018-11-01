@@ -1,0 +1,13 @@
+select count (*) plan_sku
+, p.sku plan_sku
+, p.price
+, case when p.sku ilike '%superc%' then 'superchewer' else 'classic' end current_sub_type
+, case when p.sku ilike '%mobi%' then true else false end current_mobi
+, next_billing_at
+from box_appdb.subscription_commitments sc
+inner join box_appdb.subscriptions s on s.id = sc.subscription_id
+inner join box_appdb.users u on u.id = s.user_id
+left join box_appdb.plans p on p.id = sc.plan_id
+left join box_appdb.plans p2 on p2.id = sc.renewal_plan_id
+where date_trunc('month',next_billing_at) = '11/01/2018'
+group by 2,3,4,5,6
