@@ -1,0 +1,11 @@
+select date_trunc('day',convert_timezone('UTC','US/Eastern', o.updated_at)) as date, s.id sub_id, s.size, u.email, p.sku
+from box_appdb.line_items li
+inner join box_appdb.orders o on o.id = li.order_id
+inner join box_appdb.items i on li.source_id = i.id 
+left join box_appdb.subscriptions s on s.user_id = o.user_id
+left join box_appdb.users u on u.id = s.user_id
+left join box_appdb.plans p on p.id = s.current_plan_id
+where convert_timezone('UTC','US/Eastern', o.updated_at) between '10/25/2018' and '11/04/2018'
+and i.sku = 'U-DD'
+and li.origin = 'BarkHappy - BarkBox'
+group by 1,2,3,4,5
