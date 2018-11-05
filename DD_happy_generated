@@ -8,4 +8,4 @@ left join box_appdb.plans p on p.id = s.current_plan_id
 where convert_timezone('UTC','US/Eastern', o.updated_at) between '10/25/2018' and '11/04/2018'
 and i.sku = 'U-DD'
 and li.origin = 'BarkHappy - BarkBox'
-group by 1,2,3,4,5
+
