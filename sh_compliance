@@ -8,8 +8,7 @@ where so.order_id is not null;
 
 SELECT date_trunc('month',convert_timezone('UTC','US/Eastern', o.created_at)) as order_month
 , i.sku
-, sum (case when o.status not ilike '%cancel%' then li.quantity end) as not_canceled
-, sum (case when o.status ilike '%cancel%' then li.quantity end) as canceled
+, sum (case when o.status not ilike '%cancel%' then li.quantity end) as total_quantity
 FROM barkbox_copy.orders o
 Inner join barkbox_copy.line_items li on li.order_id = o.id
 Inner join barkbox_copy.items i on i.id = li.source_id --and li.source_type = i.type--and source_type not in ('Plan','ShippingMethod')
@@ -23,4 +22,5 @@ and li.quantity > 0
 and li.source_type not in ('Plan','ShippingMethod')
 GROUP BY date_trunc('month',convert_timezone('UTC','US/Eastern', o.created_at))
 , i.sku
+having total_quanity > 0
 ORDER BY 1,2;
