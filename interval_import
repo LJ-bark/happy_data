@@ -1,0 +1,8 @@
+from utils.sql_conns import *
+
+conn = get_redshift_dw_conn()
+sheet_url='https://docs.google.com/spreadsheets/d/1tLucnonKDo8Z_vCEB74AiYPNjredkGG6Z4HZPPUhbD8/edit#gid=444823659'
+sheet_name='new enrollees'
+redshift_table='lj scratch.interval_billing_test'
+df, error = gdoc_to_redshift(sheet_url, redshift_table, conn=conn,
+                     sheet_name=sheet_name, delimiter=',', convert_column_types=True)
