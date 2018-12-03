@@ -1,51 +1,29 @@
 drop table if exists orders_with_plan_sku;
-
 select so.order_id, p.sku plan_sku
-
 into temp orders_with_plan_sku
-
-from barkbox_copy.subscription_orders so
-
-left join barkbox_copy.subscription_commitments sc on sc.id = so.subscription_commitment_id
-
-left join barkbox_copy.plans p on p.id = sc.plan_id
-
+from box_appdb.subscription_orders so
+left join box_appdb.subscription_commitments sc on sc.id = so.subscription_commitment_id
+left join box_appdb.plans p on p.id = sc.plan_id
 where so.order_id is not null;
 
 
-
 SELECT date_trunc('day',convert_timezone('UTC','US/Eastern', o.created_at)) as order_month
-
 , i.sku
-
+, tags.name
 , sum (case when o.status not ilike '%cancel%' then li.quantity end) as qty
-
 FROM barkbox_copy.orders o
-
-Inner join barkbox_copy.line_items li on li.order_id = o.id
-
-Inner join barkbox_copy.items i on i.id = li.source_id --and li.source_type = i.type--and source_type not in ('Plan','ShippingMethod')
-
-left join barkbox_copy.taggings t on t.taggable_id = o.id and t.taggable_type = 'Order' and t.context = 'reason_codes'
-
-left join barkbox_copy.tags tags on tags.id = t.tag_id
-
-left join barkbox_copy.orders o2 on o2.id = o.origin_order_number --and o2.origin = 'Subscription'
-
+Inner join box_appdb.line_items li on li.order_id = o.id
+Inner join box_appdb.items i on i.id = li.source_id --and li.source_type = i.type--and source_type not in ('Plan','ShippingMethod')
+left join box_appdb.taggings t on t.taggable_id = o.id and t.taggable_type = 'Order' and t.context = 'reason_codes'
+left join box_appdb.tags tags on tags.id = t.tag_id
+left join box_appdb.orders o2 on o2.id = o.origin_order_number --and o2.origin = 'Subscription'
 left join orders_with_plan_sku op on op.order_id = o2.id and o2.origin = 'Subscription'
-
 WHERE convert_timezone('UTC','US/Eastern', o.created_at) between '11/16/2018' and '11/19/2018'
-
 and o.origin in ('BarkHappy - BarkBox', 'BarkHappy - General', 'BarkBox - Scout\'s Honor')
-
 and li.quantity > 0
-
 and li.source_type not in ('Plan','ShippingMethod')
-
 GROUP BY date_trunc('day',convert_timezone('UTC','US/Eastern', o.created_at))
-
 , i.sku
-
+, tags.name
 having qty > 0
-
 ORDER BY 1,2;
